@@ -39,7 +39,7 @@ Python 3 dnspython rich
 
 ## Usage
 
-    python dns_recon.py
+    python recon.py
 
 Then enter the target domain when prompted.
 
