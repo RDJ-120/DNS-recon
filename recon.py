@@ -585,8 +585,8 @@ if len(sys.argv) == 1:
     print(Colorate.Horizontal(Colors.green_to_cyan, banner))
     domain = c.input("[white][ [cyan]+ [white]] Enter The Domain:   ")
     ports = c.input("[white][ [cyan]+ [white]] Ports Scan?[ Y - N ]:   ")
-    paths = c.input("[white][ [cyan]+ [white]] Paths Scan?[ Y - N ]:   ")
-    domains = c.input("[white][ [cyan]+ [white]] Sub-domains Scan?[ Y - N ]:   ")
+    paths1 = c.input("[white][ [cyan]+ [white]] Paths Scan?[ Y - N ]:   ")
+    domains1 = c.input("[white][ [cyan]+ [white]] Sub-domains Scan?[ Y - N ]:   ")
     a = c.input("[white][ [cyan]+ [white]] Full Recon?[ Y - N ]:   ")
     os.system("clear")
     if a.lower() == "y":
@@ -600,22 +600,22 @@ if len(sys.argv) == 1:
         ports = False
     
     if paths.lower() == "y":
-        paths = True
+        paths1 = True
     else:
-        paths = False
+        paths1 = False
     
     if domains.lower() == "y":
-        domains = True
+        domains1 = True
     else:
-        domains = False
+        domains1 = False
         
 else:
     args = parser.parse_args()
     domain = args.domain
     a = args.all
     ports = args.ports
-    paths = args.paths
-    domains = args.domains
+    paths1 = args.paths
+    domains1 = args.domains
     
 print(Colorate.Horizontal(Colors.green_to_cyan, banner))
 if "https://" in domain:
@@ -632,8 +632,8 @@ c.print(rec, style="cyan")
 recon(domain)
 
 print("\n\n\n")
-tr = Markdown("# Starting Tracker...")
-c.print(tr, style="cyan")
+tra = Markdown("# Starting Tracker...")
+c.print(tra, style="cyan")
 track(ip)
         
 if a:
@@ -650,25 +650,25 @@ if a:
     c.print(dp, style="cyan")
     md(domain)
 
-if ports and not domains and not paths:
+if ports and not domains1 and not paths1:
     print("\n\n\n")
     sp = Markdown("# Scanning Ports...")
     c.print(sp, style="cyan")
     mainscan(ip)
 
-if paths and not ports and not domains:
+if paths1 and not ports and not domains1:
     print("\n\n\n")
     spp = Markdown("# Scanning Paths...")
     c.print(spp, style="cyan")
     mp(domain)
 
-if domains and not ports and not paths:
+if domains1 and not ports and not paths1:
     print("\n\n\n")
     dp = Markdown("# Scanning Sub-Domains...")
     c.print(dp, style="cyan")
     md(domain)
 
-if paths and ports and not domains:
+if paths1 and ports and not domains1:
     print("\n\n\n")
     sp = Markdown("# Scanning Ports...")
     c.print(sp, style="cyan")
@@ -678,7 +678,7 @@ if paths and ports and not domains:
     c.print(spp, style="cyan")
     mp(domain)
 
-if paths and domains and not ports:
+if paths1 and domains1 and not ports:
     print("\n\n\n")
     spp = Markdown("# Scanning Paths...")
     c.print(spp, style="cyan")
@@ -688,7 +688,7 @@ if paths and domains and not ports:
     c.print(dp, style="cyan")
     md(domain)
 
-if ports and domains and not paths:
+if ports and domains1 and not paths1:
     print("\n\n\n")
     sp = Markdown("# Scanning Ports...")
     c.print(sp, style="cyan")
@@ -698,7 +698,7 @@ if ports and domains and not paths:
     c.print(dp, style="cyan")
     md(domain)
 
-if ports and domains and paths:
+if ports and domains1 and paths1:
     print("\n\n\n")
     sp = Markdown("# Scanning Ports...")
     c.print(sp, style="cyan")
