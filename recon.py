@@ -225,6 +225,15 @@ paths = [
     "/upgrade", "/update", "/patch", "/migrate", "/migration",
 ]
 
+def pf(url, status_code):
+    url_part    = f"[ * ] Found, URL: {url}"
+    status_part = f"Status Code: {status_code}"
+    print(
+        Colorate.Horizontal(Colors.cyan_to_blue,    url_part.ljust(80)) +
+        Colorate.Horizontal(Colors.red_to_purple,   status_part)
+    )
+
+
 def tr(domain):
     url = f"https://{domain}"
     headers = {
@@ -235,90 +244,123 @@ def tr(domain):
         "Upgrade-Insecure-Requests": "1"
     }
     try:
-        r = requests.get(url, headers=headers, timeout=5)
-        if r.status_code == 200 or r.status_code <= 400:
+        rr = requests.get(url, headers=headers, timeout=5)
+        if rr.status_code < 400:
             return "https"
-    except:
-        try:
-            url = f"http://{domain}"
-            r = requests.get(url, headers=headers, timeout=5)
-            if r.status_code == 200:
-                return "http"
-        except:
-            return "dead"
-
-
-def pf(url, status_code):
-    url_part    = f"[ * ] Found, URL: {url}"
-    status_part = f"Status Code: {status_code}"
-    print(
-        Colorate.Horizontal(Colors.cyan_to_blue,    url_part.ljust(80)) +
-        Colorate.Horizontal(Colors.red_to_purple,   status_part)
-    )
-
-
-def ds(domain, sub, ty, headers):
-    if ty == "https":
-        url = f"https://{sub}.{domain}"
-    elif ty == "http":
-        url = f"http://{sub}.{domain}"
-    else:
-        print(Colorate.Horizontal(Colors.red_to_purple, "[ * ] The URL Is Dead!"))
-        return
-
-    try:
-        rrr = requests.head(url, headers=headers, timeout=5, allow_redirects=False)
-        if 200 <= rrr.status_code < 300:
-            rr = requests.get(url, headers=headers, timeout=5)
-            if "not found" not in rr.text.lower() and "suspended" not in rr.text.lower() and "error" not in rr.text.lower():
-                pf(url, rrr.status_code)
-    except:
+    except requests.exceptions.RequestException:
         pass
 
+    try:
+        url = f"http://{domain}"
+        rr = requests.get(url, headers=headers, timeout=5)
+        if rr.status_code < 400:
+            return "http"
+    except requests.exceptions.RequestException:
+        pass
+
+    return "dead"
 
 def ps(domain, path, ty, headers):
-    if ty == "https":
-        url = f"https://{domain}{path}"
-    elif ty == "http":
-        url = f"http://{domain}{path}"
-    else:
-        print(Colorate.Horizontal(Colors.red_to_purple, "[ * ] The URL Is Dead!"))
+    if ty not in ("http", "https"):
+        print(Colorate.Horizontal(Colors.red_to_purple, "[ * ] Invalid Scheme!"))
         return
 
+    url = f"{ty}://{domain}{path}"
+    dead = ["not found", "suspended", "this domain is for sale", "domain expired", "account suspended", "parked"]
+
     try:
-        rrr = requests.head(url, headers=headers, timeout=5, allow_redirects=False)
-        if 200 <= rrr.status_code < 300:
-            rr = requests.get(url, headers=headers, timeout=5)
-            if "not found" not in rr.text.lower() and "suspended" not in rr.text.lower() and "error" not in rr.text.lower():
-                pf(url, rrr.status_code)
-    except:
+        rr = requests.get(url, headers=headers, timeout=5, allow_redirects=False)
+
+        if 200 <= rr.status_code < 300:
+            if not any(kw in rr.text.lower() for kw in dead):
+                pf(url, rr.status_code)
+
+        elif rr.status_code in (301, 302, 307, 308):
+            loc = rr.headers.get("Location", "")
+            if loc and not any(kw in loc.lower() for kw in ["parkingcrew", "sedo", "godaddy"]):
+                pf(url, rr.status_code)
+
+    except requests.exceptions.ConnectionError:
         pass
-    
+    except requests.exceptions.Timeout:
+        print(Colorate.Horizontal(Colors.red_to_purple, f"[ * ] Timeout: {url}"))
+    except requests.exceptions.RequestException:
+        pass
+        
+
+def ds(domain, sub, ty, headers):
+    if ty not in ("http", "https"):
+        print(Colorate.Horizontal(Colors.red_to_purple, "[ * ] Invalid Scheme!"))
+        return
+
+    url = f"{ty}://{sub}.{domain}"
+    dead = ["not found", "suspended", "this domain is for sale", "domain expired", "account suspended", "parked"]
+
+    try:
+        rr = requests.get(url, headers=headers, timeout=5, allow_redirects=False)
+
+        if 200 <= rr.status_code < 300:
+            if not any(kw in rr.text.lower() for kw in dead):
+                pf(url, rr.status_code)
+
+        elif rr.status_code in (301, 302, 307, 308):
+            loc = rr.headers.get("Location", "")
+            if loc and not any(kw in loc.lower() for kw in ["parkingcrew", "sedo", "godaddy"]):
+                pf(url, rr.status_code)
+
+    except requests.exceptions.ConnectionError:
+        pass
+    except requests.exceptions.Timeout:
+        print(Colorate.Horizontal(Colors.red_to_purple, f"[ * ] Timeout: {url}"))
+    except requests.exceptions.RequestException:
+        pass
+        
 def mp(domain):
     ty = tr(domain)
-    for one in paths:
-        headers = {
-    "User-Agent": generate_user_agent(),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1"
-    }
-        
-        threading.Thread(target=ps, args=(domain, one, ty, headers), daemon=True).start()
+    if ty == "dead":
+        print(Colorate.Horizontal(Colors.red_to_purple, f"[ * ] Dead: {domain}"))
+        return
+
+    sem = threading.Semaphore(20)
+
+    def run(path):
+        with sem:
+            headers = {
+                "User-Agent": generate_user_agent(),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1"
+            }
+            ps(domain, path, ty, headers)
+
+    threads = [threading.Thread(target=run, args=(one,), daemon=True) for one in paths]
+    for t in threads: t.start()
+    for t in threads: t.join()
+
 
 def md(domain):
     ty = tr(domain)
-    for one in paths:
-        headers = {
-    "User-Agent": generate_user_agent(),
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Connection": "keep-alive",
-    "Upgrade-Insecure-Requests": "1"
-    }
-        
-        threading.Thread(target=ds, args=(domain, one, ty, headers), daemon=True).start()
+    if ty == "dead":
+        print(Colorate.Horizontal(Colors.red_to_purple, f"[ * ] Dead: {domain}"))
+        return
+
+    sem = threading.Semaphore(20)
+
+    def run(sub):
+        with sem:
+            headers = {
+                "User-Agent": generate_user_agent(),
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+                "Upgrade-Insecure-Requests": "1"
+            }
+            ds(domain, sub, ty, headers)
+
+    threads = [threading.Thread(target=run, args=(one,), daemon=True) for one in domains]
+    for t in threads: t.start()
+    for t in threads: t.join()
        
 banner = """⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣿⣷⢸⣧⠨⢳⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣤⣄⡾⠱⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⢿⡿⣹⡤⣿⡏⠸⡅⠀⠀⠀⠀⠀⠀⠀⢀⣤⣾⣿⣿⠟⣰⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
@@ -599,12 +641,12 @@ if len(sys.argv) == 1:
     else:
         ports = False
     
-    if paths.lower() == "y":
+    if paths1.lower() == "y":
         paths1 = True
     else:
         paths1 = False
     
-    if domains.lower() == "y":
+    if domains1.lower() == "y":
         domains1 = True
     else:
         domains1 = False
