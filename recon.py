@@ -568,7 +568,7 @@ parser.add_argument("-d",  "--domains",help="Scan sub-domains.", action="store_t
 parser.add_argument("-r",  "--reverse",help="Reverse DNS on resolved IP, run recon on root domain.", action="store_true")
 parser.add_argument("-he", "--headers",help="Check security headers.", action="store_true")
 parser.add_argument("-pr", "--proxies",help="Proxies file to use (one per line, host:port or proto://host:port).")
-parser.add_argument("-j",  "--json",   help="Save results to JSON file. ex: --json=results.json", dest="json_file")
+parser.add_argument("-j",  "--json",   help="Save results to JSON file. ex: --json=results.json", dest="json")
 
 c = Console()
 
@@ -881,7 +881,7 @@ if len(sys.argv) == 1:
     proxies_inp  = c.input("[white][ [cyan]+ [white]] Proxies File (blank to skip):           ")
     proxies_file = proxies_inp.strip() if proxies_inp.strip() else None
     json_inp     = c.input("[white][ [cyan]+ [white]] Save to JSON File (blank to skip):      ")
-    json_file    = json_inp.strip() if json_inp.strip() else None
+    jsfi    = json_inp.strip() if json_inp.strip() else None
     hdr_inp      = c.input("[white][ [cyan]+ [white]] Check Security Headers? [ Y - N ]:      ")
     headers_check = hdr_inp.lower() == "y"
     rev_inp      = c.input("[white][ [cyan]+ [white]] Reverse DNS? [ Y - N ]:                 ")
@@ -928,7 +928,7 @@ else:
     reverse       = args.reverse
     headers_check = args.headers
     proxies_file  = args.proxies
-    json_file     = args.json_file
+    jsfi     = args.json
 
 print(Colorate.Horizontal(Colors.green_to_cyan, banner))
 
@@ -1048,6 +1048,6 @@ if ports and domains1 and paths1:
     c.print(dp, style="cyan")
     md(domain)
 
-if json_file:
-    jsave(json_file)
-    p(f"\n[ + ] Results saved to {json_file}")
+if jsfi:
+    jsave(jsfi)
+    p(f"\n[ + ] Results saved to {jsfi}")
