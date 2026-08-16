@@ -41,6 +41,8 @@ pip install requests rich pystyle dnspython user_agent
 
 ## Usage
 
+![Scan Mode Example](https://github.com/user-attachments/assets/bcf8eeac-93f6-488b-a0db-31a682326b85)
+
 ### Interactive Mode
 
 Run the script with no arguments to enter the guided prompt:
